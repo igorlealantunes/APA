@@ -7,7 +7,32 @@
 # Professor  : Leonardo Cesar Teonacio Bezerra
 #
 
+#https://www.filosophy.org/post/32/python_function_execution_deadlines__in_simple_examples/
+# Essa classe lancara execoes caso o algoritimo tome mais que X segundos para acabar
+max_execution_time = 300 # 300 segundos = 5 minutos
 
+import signal
+class TimedOutExc(Exception):
+  pass
+
+def deadline(timeout, *args):
+  def decorate(f):
+    def handler(signum, frame):
+      raise TimedOutExc()
+
+    def new_f(*args):
+
+      signal.signal(signal.SIGALRM, handler)
+      signal.alarm(timeout)
+      return f(*args)
+      signa.alarm(0)
+
+    new_f.__name__ = f.__name__
+    return new_f
+  return decorate
+
+import sys
+sys.setrecursionlimit(9999999)
 
 
 ####################################################
@@ -18,7 +43,7 @@
 ####################################################
 ####################################################
  
-
+@deadline(max_execution_time)
 def selection_sort(unsorted_array) :
 
 	# copia a lista para nao mudar os valores da lista original
@@ -45,7 +70,7 @@ def selection_sort(unsorted_array) :
 
 #print selection_sort(array)
 
-
+@deadline(max_execution_time)
 def insertion_sort(unsorted_array):
 
 	clone = unsorted_array[:]
@@ -106,6 +131,7 @@ def _merge_sort(unsorted_array):
         return _merge(a,b) # finalmente junta as partes para formar a lista ordenada
 
 #usado para chamar a funcao recursiva e nao alterar o array original
+@deadline(max_execution_time)
 def merge_sort(unsorted_array):
 	clone = unsorted_array[:]
 	return _merge_sort(clone)
@@ -115,6 +141,7 @@ def merge_sort(unsorted_array):
 
 
 #  Primeiro transformamos a lista num heap ( arvore binaria, onde o pai eh sempre > que os filhos )
+@deadline(max_execution_time)
 def heap_sort( unsorted_array ):
 
 	clone = unsorted_array[:]
@@ -171,7 +198,7 @@ def _fix_heap( my_list, first, last ):
 
 # print heap_sort(array)
 
-
+@deadline(max_execution_time)
 def quick_sort(unsorted_array):
 	clone = unsorted_array[:]
 	_quick_sort(clone, 0, len(clone)-1)
@@ -244,15 +271,30 @@ import time
 
 path = './instancias'
 
-inputs = {"10" : [], "50" : [], "90" : []}
-
 sorting_functions = [ selection_sort, insertion_sort, merge_sort, heap_sort, quick_sort ]
+algor_classes = ["10", "50", "90"]
+
+inputs  = {}
+results = {}
+timeouts = []
+
+for clas in algor_classes:
+	inputs[clas]  = []
+	results[clas] = {}
+
+for input_type in inputs:
+	for func in sorting_functions :
+		results[input_type][func.__name__] = {}
+
+from pprint import pprint
 
 for filename in os.listdir(path):
 	category = filename.split(".")[0]
 
-	inputs[category].append(filename)
-
+	try:
+		inputs[category].append(filename)
+	except KeyError:
+		pass
 
 for input_type in inputs:
 	for file in inputs[input_type]:
@@ -268,17 +310,38 @@ for input_type in inputs:
 
     		for func in sorting_functions:
     			start_time = time.time()
+    			print ""
 	    		print "Executing " + func.__name__ + " In " + file
-	    		func(integers[:100])
-	    		end = time.time()
-	    		print("--- %s seconds ---" % (time.time() - start_time))
-    		
+
+	    		try:
+	    			func(integers)
+	    		except TimedOutExc as e:
+	    			print "\tMax Execution time reached"
+	    			# add to list of timeouts
+	    			timeouts.append(func.__name__ + " In " + file)
+	    		finally:	
+		    		end = time.time()
+		    		time_taken = (time.time() - start_time)
+		    		print("\t--- %s seconds ---" % time_taken)
+
+		    		# add to results array
+		    		results[input_type][func.__name__][file] = time_taken
+
+
+for input_type in results:
+	for function in results[input_type]:
+		total = 0
+		for file in results[input_type][function]:
+			total += results[input_type][function][file]
+
+		results[input_type][function]["total"] = total
+		results[input_type][function]["mean"]  = total / len(results[input_type][function])
 
 
 
+pprint(results)
 
-
-
+pprint(timeouts)
 
 
 
