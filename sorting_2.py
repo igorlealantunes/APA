@@ -271,7 +271,7 @@ import time
 
 path = './instancias'
 
-sorting_functions = [ selection_sort, insertion_sort, merge_sort, heap_sort, quick_sort ]
+sorting_functions = [ selection_sort, insertion_sort, merge_sort, heap_sort, quick_sort, sorted ]
 algor_classes = ["10", "50", "90"]
 
 inputs  = {}
