@@ -278,6 +278,8 @@ inputs  = {}
 results = {}
 timeouts = []
 
+num_files = 0
+
 for clas in algor_classes:
 	inputs[clas]  = []
 	results[clas] = {}
@@ -289,10 +291,12 @@ for input_type in inputs:
 from pprint import pprint
 
 for filename in os.listdir(path):
+	num_files = num_files + 1
 	category = filename.split(".")[0]
 
 	try:
 		inputs[category].append(filename)
+		num_files = num_files + 1
 	except KeyError:
 		pass
 
@@ -303,7 +307,7 @@ for input_type in inputs:
 		with open(full_path) as f:
 			content = f.readlines()
 
-			### This will take most time to execute ( the files are very large )
+			### This will take some time to execute ( the files are very large )
     		integers = map(int, content)[1:] # delete first element (number of numbers in the file)
 
     		#print (integers[:100])
@@ -332,10 +336,11 @@ for input_type in results:
 	for function in results[input_type]:
 		total = 0
 		for file in results[input_type][function]:
-			total += results[input_type][function][file]
+			if(file != 'total' and file != 'mean'):
+				total += results[input_type][function][file]
 
 		results[input_type][function]["total"] = total
-		results[input_type][function]["mean"]  = total / len(results[input_type][function])
+		results[input_type][function]["mean"]  = total / num_files
 
 
 
