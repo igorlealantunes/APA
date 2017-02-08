@@ -154,7 +154,7 @@ elif sort_type == "2":
 elif sort_type == "3":
 	function_to_call = radix_sort
 else:
-	sys.exit("argv should be between 1 and 5")
+	sys.exit("argv should be between 1 and 3")
 
 # le numero de entradas
 num_entradas = input()
@@ -176,17 +176,8 @@ sorted_array = function_to_call(unsorted_array)
 for x in sorted_array:
 	print x
 
-
-
 # fontes 
 
 #http://www.growingwiththeweb.com/2015/06/bucket-sort.html
 #https://www.quora.com/How-do-I-calculate-the-optimized-number-of-buckets-when-implementing-bucket-sort-followed-by-insertion-sort
 #https://gist.github.com/rizkyabdilah/1740053
-
-
-
-
-
-
-
