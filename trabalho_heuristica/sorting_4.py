@@ -387,7 +387,7 @@ def choose_best_func(unsorted_array):
 			
 	else: # algoritmos tradicionais
 		
-		OD = ordination_degree(unsorted_array)
+		OD = _ordination_degree(unsorted_array)
 		print OD
 
 		if len(unsorted_array) < 30 and OD > 70 :
@@ -405,7 +405,7 @@ def _is_linear(unsorted_array):
 
 # calcula o grau de ordenacao, simplesmente comparando o numero com o seu sucessor
 # e realizando uma estatistica
-def ordination_degree(unsorted_array):
+def _ordination_degree(unsorted_array):
 	num_correct_pos = 0
 	for i in range(0, len(unsorted_array) - 1):
 		if(unsorted_array[i] < unsorted_array[i+1]):
@@ -414,6 +414,31 @@ def ordination_degree(unsorted_array):
 	return (num_correct_pos / (len(unsorted_array) + 0.0)) * 100
 
 
+# TODO 
+def _find_num_buckets(unsorted_array):
+	import math
+	bucket_size = math.sqrt(len(unsorted_array))
+
+	min_value = min(unsorted_array)
+	max_value = max(unsorted_array)
+
+	num_buckets = int(math.floor((max_value - min_value) / bucket_size) + 1)
+
+	# inicia lista de buckets
+	buckets = [ [] for i in range(num_buckets) ]
+
+	#inicia os buckets com seus respectivos elementos
+	for i in range(len(unsorted_array)):
+		buckets[int(math.floor((unsorted_array[i] - min_value) / bucket_size))].append(unsorted_array[i])
+
+	empty_bukets = 0
+	for x in buckets:
+		print len(x)
+		if( len(x) == 0):
+			empty_bukets = empty_bukets + 1
+
+	print empty_bukets
+
 import os
 import time
 
@@ -421,10 +446,10 @@ import time
 function_to_call = ""
 unsorted_array = []
 
-
 # le numero de entradas
 num_entradas = input()
 
+print "Reading input..."
 # transforma em uma lista de inteiros
 for x in range(num_entradas):
 
@@ -435,17 +460,35 @@ for x in range(num_entradas):
 	except ValueError:
 		pass
 
+print "Read input !"
 # Choose best function to call
 function_to_call = choose_best_func(unsorted_array)
 
+start_time = time.time()
+bucket_sort(unsorted_array)
+end = time.time()
+time_taken = (time.time() - start_time)
+print("\t Bucket --- %s seconds ---" % time_taken)
+
+start_time = time.time()
+radix_sort(unsorted_array)
+end = time.time()
+time_taken = (time.time() - start_time)
+print("\t Radix --- %s seconds ---" % time_taken)
+
+
+
 print "Using " + function_to_call.__name__
 
+
+#_find_num_buckets(unsorted_array)
+
 # roda o algoritmo
-sorted_array = function_to_call(unsorted_array)
+#sorted_array = function_to_call(unsorted_array)
 
 #imprime na stdout
-for x in sorted_array:
-	print x
+#for x in sorted_array:
+#	print x
 
 
 
