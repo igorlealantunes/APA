@@ -43,105 +43,8 @@ sys.setrecursionlimit(9999999)
 ####################################################
 ####################################################
  
-@deadline(max_execution_time)
-def selection_sort(unsorted_array) :
-
-	# copia a lista para nao mudar os valores da lista original
-	clone = unsorted_array[:]
-
-	for i in range(len(clone)) :
-		
-		# segura a posicao do menor valor
-		smallest_pointer = i
-
-		# varre a lista a partir da posicao i 
-		# para nao desordenar o que ja esta ordenado
-		for j in range(i, len(clone)):
-
-			if clone[j] < clone[smallest_pointer]:
-				smallest_pointer = j
-			
-		aux = clone[i]
-		clone[i] = clone[smallest_pointer]
-		clone[smallest_pointer] = aux
-
-	return clone
-
-
-#print selection_sort(array)
-
-@deadline(max_execution_time)
-def insertion_sort(unsorted_array):
-
-	clone = unsorted_array[:]
-
-	# varre a lista
-	for i in range(len(clone)):
-
-		value = clone[i]
-		pos   = i 
-
-		# pos > 0 			   => ter certeza que nao vai voltar mais do que o necessario
-		# clone[pos-1] > value => ir voltando ate que a sublista estiver ordenada 
-		while pos > 0 and clone[pos-1] > value:
-			clone[pos] = clone[pos-1]
-			pos = pos - 1
-
-		# insere o elemento na posicao correta
-		clone[pos] = value
-
-	return clone
-
-#print insertion_sort(array)
-
-# usado no merge sort => NAO DEVE SER CHAMADO
-def _merge(a,b):
-
-	# array auxiliar
-	c = []
-
-	#realiza o `sorting` real nas partes do array ( esquerda e direita )
-	while len(a) != 0 and len(b) != 0:
-
-		# adiciona das partes A ou B para array C do menor para o maior
-		if a[0] < b[0]:
-			c.append(a[0])
-			a.remove(a[0]) # importante quando copiar o restante para C
-		else:
-			c.append(b[0])
-			b.remove(b[0]) # importante quando copiar o restante para C
-
-	# copia o restante para C
-	if len(a) == 0:
-		c += b
-	else:
-		c += a
-	return c
-
-#usado para recursao (NAO DEVE SER CHAMADO DIRETAMENTE)
-def _merge_sort(unsorted_array):
-
-	# para recursao se o valor da lista for < 1 ( 0 para casos impares )
-	if len(unsorted_array) == 0 or len(unsorted_array) == 1 :
-		return unsorted_array
-	else : # divide lista em dois e chama recursao de novo
-		middle = len(unsorted_array)/2
-		a = _merge_sort(unsorted_array[:middle])
-		b = _merge_sort(unsorted_array[middle:])
-		return _merge(a,b) # finalmente junta as partes para formar a lista ordenada
-
-#usado para chamar a funcao recursiva e nao alterar o array original
-@deadline(max_execution_time)
-def merge_sort(unsorted_array):
-	clone = unsorted_array[:]
-	return _merge_sort(clone)
-
-#print merge_sort(array)  
-
-
 
 #  Primeiro transformamos a lista num heap ( arvore binaria, onde o pai eh sempre > que os filhos )
-@deadline(max_execution_time)
 def heap_sort( unsorted_array ):
 
 	clone = unsorted_array[:]
@@ -196,9 +99,6 @@ def _fix_heap( my_list, first, last ):
 			return
 
 
-# print heap_sort(array)
-
-@deadline(max_execution_time)
 def quick_sort(unsorted_array):
 	clone = unsorted_array[:]
 	_quick_sort(clone, 0, len(clone)-1)
@@ -256,9 +156,6 @@ def _partition(alist,first,last):
 
 	#retorna o novo valor do pivot
 	return rightmark
-
-
-
 
 
 def counting_sort(unsorted_array):
@@ -325,7 +222,7 @@ def bucket_sort(unsorted_array):
 	for i in range(len(clone)):
 		buckets[int(math.floor((clone[i] - min_value) / bucket_size))].append(clone[i])
 
-	
+
 	clone = []
 	#para cada bucket => aplica insertion sort e cola array ordenado no resultado
 	for i in range(len(buckets)):
@@ -368,6 +265,31 @@ def radix_sort(unsorted_array):
 
 	return clone
 
+
+def radix_sort_string(unsorted_array, pos = 0):
+
+	clone = unsorted_array[:]
+
+	if len(clone) <= 1:
+		return clone
+
+	done_bucket = []
+	
+	# 27 => numero de letras no alfabeto
+	buckets = [ [] for x in range(27) ] 
+
+	for s in clone:
+		# se ja checou ao final da string
+		if pos >= len(s):
+			done_bucket.append(s)
+		else: # se nao continua inserindo
+			buckets[ord(s[pos]) - ord('a') ].append(s)
+
+	# chama o radix pra string no proximo bucket recusivamente
+	buckets = [ radix_sort_string(b, pos + 1) for b in buckets ]
+
+	return done_bucket + [ b for blist in buckets for b in blist ]
+
 ####################################################
 ####################################################
 ####################################################
@@ -376,35 +298,63 @@ def radix_sort(unsorted_array):
 ####################################################
 ####################################################
  
+# Vai retornar o melhor algoritmo de acordo com nossa heuristica
 def choose_best_func(unsorted_array):
 
+	is_string = _is_string(unsorted_array)
+
+	# se entrada for string utilizar radix sort
+	if(is_string):
+		return radix_sort_string
+
 	#checar se eh possivel usar algr lineares
-	if _is_linear(unsorted_array) :
-		if len(unsorted_array) < 100000:
-			return bucket_sort
+	if _is_linear_good(unsorted_array) :
+
+		max_value = max(unsorted_array)
+		
+		# se o maximo valor for pequeno => counting sort ira utilizar menos memoria
+		if max_value < 1000000: 
+			return counting_sort
 		else:
 			return radix_sort
 			
 	else: # algoritmos tradicionais
 		
 		OD = _ordination_degree(unsorted_array)
-		print OD
 
+		# se entrada muito pequena => utilizar insertion
 		if len(unsorted_array) < 30 and OD > 70 :
 			return insertion_sort
-		elif OD > 70:
+		elif OD > 70:   # se ja estiver bem ordenado => utilizr heap_sort
 			return heap_sort
-		else:
+		else:			# ultimo caso => utilizar quick
 			return quick_sort
 		
+#checa se valores sao strings
+def _is_string(unsorted_array):
+	for i in range(0, len(unsorted_array)):
+		if( not isinstance(unsorted_array[i], str) ):
+			return False
 
+	return True
 
-def _is_linear(unsorted_array):
-	# checa se eh inteiro >= 0
-	return all( (isinstance(i, int) and i >= 0 ) for i in unsorted_array )
+# checa se seria bom utilizar algoritmos lineares
+def _is_linear_good(unsorted_array):
+
+	max_value = max(unsorted_array)
+
+	# se o numero tiver muitas casas deciamis => melhor utilizar algr tradicionais
+	if( len(str(max_value)) > 8 ):
+		return False
+
+	for i in range(0, len(unsorted_array)):
+		if( (not isinstance(unsorted_array[i], int)) or unsorted_array[i] < 0):
+			return False
+
+	return True
 
 # calcula o grau de ordenacao, simplesmente comparando o numero com o seu sucessor
-# e realizando uma estatistica
+# e realizando um calculo estatistico
 def _ordination_degree(unsorted_array):
 	num_correct_pos = 0
 	for i in range(0, len(unsorted_array) - 1):
@@ -413,31 +363,15 @@ def _ordination_degree(unsorted_array):
 
 	return (num_correct_pos / (len(unsorted_array) + 0.0)) * 100
 
-
-# TODO 
-def _find_num_buckets(unsorted_array):
-	import math
-	bucket_size = math.sqrt(len(unsorted_array))
+# transforma a entrada para casos onde exista numeros negativos
+def _treat_input(unsorted_array):
 
 	min_value = min(unsorted_array)
-	max_value = max(unsorted_array)
+	if(min_value < 0):
+		for i in range(0, len(unsorted_array)):
+			unsorted_array[i] = unsorted_array[i] + (- min_value)
 
-	num_buckets = int(math.floor((max_value - min_value) / bucket_size) + 1)
-
-	# inicia lista de buckets
-	buckets = [ [] for i in range(num_buckets) ]
-
-	#inicia os buckets com seus respectivos elementos
-	for i in range(len(unsorted_array)):
-		buckets[int(math.floor((unsorted_array[i] - min_value) / bucket_size))].append(unsorted_array[i])
-
-	empty_bukets = 0
-	for x in buckets:
-		print len(x)
-		if( len(x) == 0):
-			empty_bukets = empty_bukets + 1
-
-	print empty_bukets
+	return min_value
 
 import os
 import time
@@ -449,46 +383,76 @@ unsorted_array = []
 # le numero de entradas
 num_entradas = input()
 
-print "Reading input..."
-# transforma em uma lista de inteiros
-for x in range(num_entradas):
+is_string = False
+#print "Reading input..."
 
-	try:
-		input_val = input()
-		i = int(input_val)
-		unsorted_array.append(i)
-	except ValueError:
-		pass
+first_element = raw_input()
+# adiciona o primeiro elemento
 
-print "Read input !"
+# tenta convetter para inteiro => se der problema a entrada eh string
+try:
+	first_element = int(first_element)
+	is_string = False
+except ValueError:
+	is_string = True
+
+unsorted_array.append(first_element)
+
+# checa se a entrada eh string ou inteiro
+if(not is_string): # se for int
+	for x in range(num_entradas - 1):
+		try:
+			input_val = input()
+			i = int(input_val)
+			unsorted_array.append(i)
+		except ValueError:
+			pass
+
+else: # se for string
+	for x in range(num_entradas - 1):
+		try:
+			input_val = raw_input()
+			i = str(input_val)
+			unsorted_array.append(i)
+		except ValueError:
+			pass
+
+#print "Read input !"
+
+#Tratando a entrada (transformando array todo em positivos) =>
+if( not is_string):
+	min_value = _treat_input(unsorted_array)
+
 # Choose best function to call
 function_to_call = choose_best_func(unsorted_array)
 
-start_time = time.time()
-bucket_sort(unsorted_array)
-end = time.time()
-time_taken = (time.time() - start_time)
-print("\t Bucket --- %s seconds ---" % time_taken)
+#print "Using " + function_to_call.__name__
 
-start_time = time.time()
-radix_sort(unsorted_array)
-end = time.time()
-time_taken = (time.time() - start_time)
-print("\t Radix --- %s seconds ---" % time_taken)
-
-
-
-print "Using " + function_to_call.__name__
-
-
-#_find_num_buckets(unsorted_array)
-
+start_time = time.time()	
 # roda o algoritmo
-#sorted_array = function_to_call(unsorted_array)
+sorted_array = function_to_call(unsorted_array)
+end = time.time()
+time_taken = (time.time() - start_time)
+#print(function_to_call.__name__ +  "\t --- %s seconds ---" % time_taken)
+
+# soma o valor minimo de volta no array se a entrada foi negativa
+if( not is_string):
+	if(min_value < 0):
+		for i in range(0, len(sorted_array)):
+			sorted_array[i] = sorted_array[i] + min_value
+
+"""for i in range(0,5):
+	print sorted_array[i]
+
+print ""
+
+for i in range(-6,-1):
+	print sorted_array[i]
+"""
 
 #imprime na stdout
-#for x in sorted_array:
-#	print x
+for x in sorted_array:
+	print x
 
 
 
