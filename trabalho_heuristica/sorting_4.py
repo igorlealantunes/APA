@@ -1,35 +1,10 @@
 #
 # Trabalho Ordenacao Heuristica
 # 
-# Aluno 	 : Igor Leal Antunes
-# Matr  	 : 11211416
+# Aluno 	 : Igor Leal Antunes (11211416) && Fernando Souza (11218354)
 # Disciplina : Analise e Projeto de Algoritmos - 2016.2
 # Professor  : Leonardo Cesar Teonacio Bezerra
 #
-
-#https://www.filosophy.org/post/32/python_function_execution_deadlines__in_simple_examples/
-# Essa classe lancara execoes caso o algoritimo tome mais que X segundos para acabar
-max_execution_time = 300 # 300 segundos = 5 minutos
-
-import signal
-class TimedOutExc(Exception):
-  pass
-
-def deadline(timeout, *args):
-  def decorate(f):
-	def handler(signum, frame):
-	  raise TimedOutExc()
-
-	def new_f(*args):
-
-	  signal.signal(signal.SIGALRM, handler)
-	  signal.alarm(timeout)
-	  return f(*args)
-	  signa.alarm(0)
-
-	new_f.__name__ = f.__name__
-	return new_f
-  return decorate
 
 import sys
 sys.setrecursionlimit(9999999)
@@ -319,16 +294,7 @@ def choose_best_func(unsorted_array):
 			return radix_sort
 			
 	else: # algoritmos tradicionais
-		
-		OD = _ordination_degree(unsorted_array)
-
-		# se entrada muito pequena => utilizar insertion
-		if len(unsorted_array) < 30 and OD > 70 :
-			return insertion_sort
-		elif OD > 70:   # se ja estiver bem ordenado => utilizr heap_sort
-			return heap_sort
-		else:			# ultimo caso => utilizar quick
-			return quick_sort
+		return quick_sort
 		
 #checa se valores sao strings
 def _is_string(unsorted_array):
@@ -344,7 +310,7 @@ def _is_linear_good(unsorted_array):
 	max_value = max(unsorted_array)
 
 	# se o numero tiver muitas casas deciamis => melhor utilizar algr tradicionais
-	if( len(str(max_value)) > 8 ):
+	if( len(str(max_value)) > 110):
 		return False
 
 	for i in range(0, len(unsorted_array)):
@@ -355,13 +321,13 @@ def _is_linear_good(unsorted_array):
 
 # calcula o grau de ordenacao, simplesmente comparando o numero com o seu sucessor
 # e realizando um calculo estatistico
-def _ordination_degree(unsorted_array):
+"""def _ordination_degree(unsorted_array):
 	num_correct_pos = 0
 	for i in range(0, len(unsorted_array) - 1):
 		if(unsorted_array[i] < unsorted_array[i+1]):
 			num_correct_pos = num_correct_pos + 1
 
-	return (num_correct_pos / (len(unsorted_array) + 0.0)) * 100
+	return (num_correct_pos / (len(unsorted_array) + 0.0)) * 100"""
 
 # transforma a entrada para casos onde exista numeros negativos
 def _treat_input(unsorted_array):
@@ -433,6 +399,8 @@ start_time = time.time()
 sorted_array = function_to_call(unsorted_array)
 end = time.time()
 time_taken = (time.time() - start_time)
+
+
 #print(function_to_call.__name__ +  "\t --- %s seconds ---" % time_taken)
 
 # soma o valor minimo de volta no array se a entrada foi negativa
@@ -440,8 +408,8 @@ if( not is_string):
 	if(min_value < 0):
 		for i in range(0, len(sorted_array)):
 			sorted_array[i] = sorted_array[i] + min_value
-
-"""for i in range(0,5):
+"""
+for i in range(0,5):
 	print sorted_array[i]
 
 print ""
@@ -450,9 +418,10 @@ for i in range(-6,-1):
 	print sorted_array[i]
 """
 
+
 #imprime na stdout
 for x in sorted_array:
-	print x
+	print x 
 
 
 
