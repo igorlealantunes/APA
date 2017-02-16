@@ -6,9 +6,30 @@
 # Professor  : Leonardo Cesar Teonacio Bezerra
 #
 
+max_execution_time = 300 # 300 segundos = 5 minutos
+
+import signal
+class TimedOutExc(Exception):
+  pass
+
+def deadline(timeout, *args):
+  def decorate(f):
+	def handler(signum, frame):
+	  raise TimedOutExc()
+
+	def new_f(*args):
+
+	  signal.signal(signal.SIGALRM, handler)
+	  signal.alarm(timeout)
+	  return f(*args)
+	  signa.alarm(0)
+
+	new_f.__name__ = f.__name__
+	return new_f
+  return decorate
+
 import sys
 sys.setrecursionlimit(9999999)
-
 
 ####################################################
 ####################################################
@@ -20,6 +41,7 @@ sys.setrecursionlimit(9999999)
  
 
 #  Primeiro transformamos a lista num heap ( arvore binaria, onde o pai eh sempre > que os filhos )
+@deadline(max_execution_time)
 def heap_sort( unsorted_array ):
 
 	clone = unsorted_array[:]
@@ -73,7 +95,7 @@ def _fix_heap( my_list, first, last ):
 		else:
 			return
 
-
+@deadline(max_execution_time)
 def quick_sort(unsorted_array):
 	clone = unsorted_array[:]
 	_quick_sort(clone, 0, len(clone)-1)
@@ -132,7 +154,7 @@ def _partition(alist,first,last):
 	#retorna o novo valor do pivot
 	return rightmark
 
-
+@deadline(max_execution_time)
 def counting_sort(unsorted_array):
 
 	clone = unsorted_array[:]
@@ -172,6 +194,7 @@ def _insertion_sort(unsorted_array):
 		# insere o elemento na posicao correta
 		unsorted_array[pos] = value
 
+@deadline(max_execution_time)
 def bucket_sort(unsorted_array):
 	
 	import math
@@ -208,7 +231,7 @@ def bucket_sort(unsorted_array):
 
 	return clone
 
-
+@deadline(max_execution_time)
 def radix_sort(unsorted_array):
 
 	clone = unsorted_array[:]
@@ -240,7 +263,7 @@ def radix_sort(unsorted_array):
 
 	return clone
 
-
+@deadline(max_execution_time)
 def radix_sort_string(unsorted_array, pos = 0):
 
 	clone = unsorted_array[:]
@@ -346,73 +369,82 @@ import time
 function_to_call = ""
 unsorted_array = []
 
-# le numero de entradas
-num_entradas = input()
 
-is_string = False
-#print "Reading input..."
+# pega a pasta para ler como primeiro parametro
+path = sys.argv[1]
 
-first_element = raw_input()
-# adiciona o primeiro elemento
 
-# tenta convetter para inteiro => se der problema a entrada eh string
-try:
-	first_element = int(first_element)
-	is_string = False
-except ValueError:
-	is_string = True
+from pprint import pprint
 
-unsorted_array.append(first_element)
+num_files = 0
+inputs = []
 
-# checa se a entrada eh string ou inteiro
-if(not is_string): # se for int
-	for x in range(num_entradas - 1):
+for filename in os.listdir(path):
+	num_files = num_files + 1
+
+	try:
+		inputs.append(filename)
+		num_files = num_files + 1
+	except KeyError:
+		pass
+
+counter = 0
+for file in inputs:
+		
+	counter = counter + 1 
+	print counter 
+	full_path = path + "/" + file
+	with open(full_path) as f:
+		content = f.readlines()
+
 		try:
-			input_val = input()
-			i = int(input_val)
-			unsorted_array.append(i)
+			test_value = int(content[2])
+			is_string = False
 		except ValueError:
+			is_string = True
 			pass
 
-else: # se for string
-	for x in range(num_entradas - 1):
+
+		if not is_string:
+			is_string = False
+			input_array = map(int, content)[1:] # delete first element (number of numbers in the file)
+		else:
+			is_string = True
+			input_array = map(str, content)[1:] # delete first element (number of numbers in the file)
+
+		start_time = time.time()
+		
+
+		#Tratando a entrada (transformando array todo em positivos) =>
+		if( not is_string):
+			min_value = _treat_input(input_array)
+
 		try:
-			input_val = raw_input()
-			i = str(input_val)
-			unsorted_array.append(i)
-		except ValueError:
-			pass
 
-#print "Read input !"
+			#print input_array
+			function_to_call = choose_best_func(input_array)
 
-#Tratando a entrada (transformando array todo em positivos) =>
-if( not is_string):
-	min_value = _treat_input(unsorted_array)
+			#print function_to_call
+			#exit()
 
-# Choose best function to call
-function_to_call = choose_best_func(unsorted_array)
+			print ""
+			print "Executing " + function_to_call.__name__ + " In " + file
+			
+			sorted_array = function_to_call(input_array)
 
-#print "Using " + function_to_call.__name__
+			# soma o valor minimo de volta no array se a entrada foi negativa
+			if( not is_string):
+				if(min_value < 0):
+					for i in range(0, len(sorted_array)):
+						sorted_array[i] = sorted_array[i] + min_value
 
-start_time = time.time()	
-# roda o algoritmo
-sorted_array = function_to_call(unsorted_array)
-end = time.time()
-time_taken = (time.time() - start_time)
+		except TimedOutExc as e:
+			print "\tMax Execution time reached"
 
-
-#print(function_to_call.__name__ +  "\t --- %s seconds ---" % time_taken)
-
-# soma o valor minimo de volta no array se a entrada foi negativa
-if( not is_string):
-	if(min_value < 0):
-		for i in range(0, len(sorted_array)):
-			sorted_array[i] = sorted_array[i] + min_value
-
-
-#imprime na stdout
-for x in sorted_array:
-	print x 
+		finally:	
+			end = time.time()
+			time_taken = (time.time() - start_time)
+			print("\t--- %s seconds ---" % time_taken)
 
 
 
