@@ -67,7 +67,10 @@ while len(heap.list) > 1:
 
 	heap.fix_down(1)
 	u = heap.pop_min()
-	
+
+	#print ""
+	#heap.print_heap()
+	#print ""
 	# atualiza mapa de custo para a origem
 	costs_map[u.k] = u.v
 

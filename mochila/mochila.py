@@ -56,16 +56,12 @@ for i in xrange(1, y):
 			valorij = matrix[i - 1][j] # valor de cima
 			usage_matrix[i][j] = 0
 		else:
-			#print "peso menor ou igual"
 
 			max_obj_atual = valor_obj
 			peso_disponivel_restante = peso_disponivel - peso_obj
 
-			#print "peso disponivel " + str(peso_disponivel_restante)
-			#print "possivel adicao " + str(matrix[i - 1][peso_disponivel_restante])
 			max_obj_atual = max_obj_atual + matrix[i - 1][peso_disponivel_restante]
 
-			#print "peso de cima" + str(matrix[i - 1][j])
 			# se o max do obj atual for > do que o de cima
 			if(max_obj_atual > matrix[i - 1][j]):
 				valorij = max_obj_atual
