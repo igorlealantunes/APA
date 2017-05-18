@@ -8,7 +8,8 @@ import itertools
 import urllib
 import csv
 import functools
-
+import pprint 
+	
 def main():
 		
 	cities = []
@@ -59,16 +60,19 @@ def main():
 
 	
 	tsp = TSP()
-	tour_nn = tsp.nn_tsp(cities[:])
-	tour_greedy = tsp.greedy_tsp(cities[:])
-
-	tsp.print_tour(tour_nn)
-	print("\n")
-	tsp.print_tour(tour_greedy)
-
-	print( "\nCusto Total: tour_nn " + str(tsp.get_cost(tour_nn)))
-	print( "\nCusto Total: tour_greedy " + str(tsp.get_cost(tour_greedy)))
+	M = tsp.get_distance_matrix(cities)
 	
+	tour = tsp.nn_tsp(cities, M);
+	cost = tsp.get_cost(tour, M)
+	
+	#new_tour = tsp.swap_2opt(tour, M, 1000000)
+	new_tour = tsp.swap_3opt(tour, M, 1000000)
+	
+	print("Original cost: " + str(tsp.get_cost(tour, M)))
+	tsp.print_tour_simple(tour)
+	print("\nNew cost: " + str(tsp.get_cost(new_tour, M))) 
+	tsp.print_tour_simple(new_tour)
+
 main()
 
 

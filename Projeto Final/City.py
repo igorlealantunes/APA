@@ -8,7 +8,7 @@ class City:
 	"""
 	
 	def __init__(self, id, x, y):
-		self.id = id
+		self.id = int(id)
 		self.x = float(x)
 		self.y = float(y)
 

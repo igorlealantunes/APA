@@ -2,13 +2,33 @@
 import math
 from matplotlib import pyplot as plt
 import collections
+from random import randint
 
 class TSP:
 	
 	""" Define os algoritmos para resolucao do TSP  """
 	def __init__(self):
 		pass
-			
+	
+	# transforma a lista de cidades em uma matrix de custos
+	def get_distance_matrix(self, cities):
+
+		size = len(cities) + 1
+
+		M = [ [0 for _ in range(size)] for __ in range(size) ]
+
+		for i in cities:
+			for j in cities:
+				M[i.id][j.id] = self.distance(i, j)
+
+		return M
+
+	# imprime a matrix de custo de uma forma mais legivel
+	def pretty_print(self, M):
+		print('\n'.join([''.join(['{:4}'.format(item) for item in row]) 
+	  for row in M]))
+
+	# Calcula distancia ecludiana entre dois objectos cidade
 	def distance(self, c1, c2):
 
 		xd = c1.x - c2.x 
@@ -17,16 +37,27 @@ class TSP:
 
 		return dij
 
-	def _nearest_neighbor(self, A, cities):
-		# Calcula a distancia de A => todas as cidades em cities e retorna a minima
-		return min(cities, key=lambda c: self.distance(c, A))
+	# retorna distancia entre 2 cidades
+	def distance_by_matrix(self, c1, c2, M):
+		return M[c1.id][c2.id]
 
-	def nn_tsp(self, cities, startIndex = 0):
-		"""Start the tour at the first city; at each step extend the tour 
-		by moving from the previous city to the nearest neighboring city, C,
-		that has not yet been visited."""
+	# retorna o vizinho mais proximo da cidade A, utilizando a matrix de distancias
+	# como referencia
+	def _nearest_neighbor(self, A, cities, M):
+		
+		min_d = float("inf")
+		min_city = None
+		for i in cities:
+			if M[A.id][i.id] < min_d and M[A.id][i.id] > 0:
+				min_d = M[A.id][i.id]
+				min_city = i
 
-		startCity = cities.pop(startIndex)
+		return min_city
+
+	# algoritmo principal do nearest neighbor
+	def nn_tsp(self, cities, M):
+
+		startCity = cities.pop(0)
 
 		# primeira cidade da rota sera a cidade na posicao [startIndex] do array
 		tour = [startCity]
@@ -34,7 +65,7 @@ class TSP:
 
 		while unvisited:
 			lastVisitedCity = tour[-1]
-			C = self._nearest_neighbor(lastVisitedCity, unvisited)
+			C = self._nearest_neighbor(lastVisitedCity, unvisited, M)
 			tour.append(C)
 			unvisited.remove(C)
 
@@ -42,16 +73,16 @@ class TSP:
 
 		return tour
 
-	def greedy_tsp(self, cities, startIndex = 0):
+	def greedy_tsp(self, cities):
 		"""Go through edges, shortest first. Use edge to join segments if possible."""
 		endpoints = {c: [c] for c in cities} # A dict of {endpoint: segment}
 		
-		startCity = cities.pop(startIndex)
+		startCity = cities.pop(0)
 		path = None
 		
-		for (A, B) in self.shortest_edges_first(cities):
+		for (A, B) in self._shortest_edges_first(cities):
 			if A in endpoints and B in endpoints and endpoints[A] != endpoints[B]:
-				new_segment = self.join_endpoints(endpoints, A, B)
+				new_segment = self._join_endpoints(endpoints, A, B)
 				if len(new_segment) == len(cities):
 					path = new_segment
 					break
@@ -61,8 +92,7 @@ class TSP:
 
 		return path
 
-	def shortest_edges_first(self,cities):
-		"Return all edges between distinct cities, sorted shortest first."
+	def _shortest_edges_first(self,cities):
 		
 		# cria tuplas entre as cidades
 		# 
@@ -74,7 +104,7 @@ class TSP:
 
 		return sorted(edges, key=lambda edge: self.distance(*edge))
 	
-	def join_endpoints(self,endpoints, A, B):
+	def _join_endpoints(self,endpoints, A, B):
 		"Join B's segment onto the end of A's and return the segment. Maintain endpoints dict."
 		Asegment, Bsegment = endpoints[A], endpoints[B]
 		if Asegment[-1] is not A: Asegment.reverse()
@@ -88,6 +118,13 @@ class TSP:
 		for i in cities:
 			print (i)
 
+	def print_tour_simple(self, cities):
+		string = ""
+		for i in cities:
+			string += str(i.id) + " "
+
+		print (string)
+
 	def plot_cities(self, cities):
 		fig = plt.figure()
 		ax = fig.add_subplot(111)
@@ -96,15 +133,16 @@ class TSP:
 		Ys = [ i.y for i in cities ]
 
 		plt.scatter(Xs, Ys, marker='o', cmap=plt.get_cmap('Spectral'))
+		plt.plot(Xs, Ys)
 		
 		for i in cities:                                    
 			ax.annotate(i.id, [i.x, i.y], textcoords='data')
 		
 		plt.show()
 
-	def get_cost(self, cities):
+	def get_cost(self, tour, M):
 		
-		deque_cities = collections.deque(cities)
+		deque_cities = collections.deque(tour)
 
 		total_cost = 0
 
@@ -112,11 +150,87 @@ class TSP:
 
 		while len(deque_cities):
 			next_city = deque_cities.popleft()
-			total_cost += self.distance(current_city, next_city)
+			total_cost += self.distance_by_matrix(current_city, next_city, M)
 
 			current_city = next_city
 
 		return total_cost
+
+	def _swap(self, tour, i1, i2):
+		clone = tour[:]
+
+		aux = clone[i1]
+		clone[i1] = clone[i2]
+		clone[i2] = aux
+
+		return clone
+
+	# aplica a _swap em elementos aleatorios em busca 
+	# de um tour menor, NAO PODE MUDAR NEN A ORIGEM NEN O DESTINO !
+	def swap_2opt(self, tour, M, number_of_tries):
+
+		min_cost = self.get_cost(tour, M)
+		min_tour = tour[:]
+
+		size = len(tour)
+
+		for i in range(number_of_tries):
+			r1 = randint(1, size - 2)
+			r2 = randint(1, size - 2)
+
+			new_tour = self._swap(min_tour, r1, r2)
+			new_cost = self.get_cost(new_tour, M)
+
+			if new_cost < min_cost:
+				print ("FOUND !")
+				min_cost = new_cost
+				min_tour = new_tour
+
+		return min_tour
+
+	def swap_3opt(self, tour, M, number_of_tries):
+
+		min_cost = self.get_cost(tour, M)
+		min_tour = tour[:]
+
+		size = len(tour)
+
+		for i in range(number_of_tries):
+			r1 = randint(1, size - 2)
+			r2 = randint(1, size - 2)
+			r3 = randint(1, size - 2)
+
+			new_tour = self._swap(min_tour, r1, r2)
+			new_tour2 = self._swap(new_tour, r2, r3)
+
+			new_cost = self.get_cost(new_tour2, M)
+
+			if new_cost < min_cost:
+				print ("FOUND !")
+				min_cost = new_cost
+				min_tour = new_tour
+
+		return min_tour
+
+
+
+
+
+
+
+
+"""
+	mOv visinhanca
+
+	Movimentos em cima do resultado (2opt, 3opt, ...)
+
+	VND 
+		-> Manipular os movimentos varias vezes para encontrar uma sol melhor
+"""
+
+
+
+
 
 
 
