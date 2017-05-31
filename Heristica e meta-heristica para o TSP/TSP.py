@@ -9,7 +9,6 @@ import math
 from matplotlib import pyplot as plt
 import collections
 import random
-from itertools import permutations
 
 class TSP:
 	
@@ -74,9 +73,7 @@ class TSP:
 	def nn_tsp(self, cities, M):
 
 		# cria se um mapa, utilizando o id das cidades como KEY
-		mapa = {}
-		for i in cities:
-			mapa[i.id] = i 
+		mapa = { i.id : i for i in cities }
 
 		startCity = mapa[1]
 		del mapa[1]
@@ -111,7 +108,7 @@ class TSP:
 		print (string)
 
 	def plot_cities(self, cities):
-		fig = plt.figure()
+		fig = plt.figure(figsize=(11, 6))
 		ax = fig.add_subplot(111)
 
 		Xs = [ i.x for i in cities ]
@@ -123,7 +120,7 @@ class TSP:
 		for i in cities:                                    
 			ax.annotate(i.id, [i.x, i.y], textcoords='data')
 		
-		plt.show(block = True)
+		plt.show(block = False)
 
 	def get_cost(self, tour, M):
 		
@@ -165,7 +162,6 @@ class TSP:
 				new_tour = self._swap(min_tour, i, j)
 				new_cost = self.get_cost(new_tour, M)
 
-				#print("Trocando " + str(i) + " Com " + str(j) )
 				if new_cost < min_cost:
 					#print ("FOUND ! 2opt: " + str(new_cost) )
 					min_cost = new_cost
@@ -243,16 +239,8 @@ class TSP:
 
 	"""
 		Controi a lista de bons candidatos.
-		Se alpha = 0 => vai ser uma lista totalmente aleatoria
-		se alpha = 1 => vaiser uma lista totalmente gulosa (sem variacao)
-
-		Duvida : O alpha filtra pelo offset, como devo fazer esse filtro, 
-				 se quanto menor o custo melhor ?
-
-				 se eu utilizar o alpha padrao, ele pegara os maiores custos.
-
-				 ver RCL3 (estou negando o custo), dessa forma, "mais eh menos"
-				 e o alpha sempre pegara o maior valor (como foi negado, o maior sera o menor)
+		Se alpha = 0 => vai ser uma lista totalmente gulosa (sem variacao)
+		se alpha = 1 => vaiser uma lista totalmente aleatoria
 	"""
 	def _get_RCL(self, current_el, mapa, M, alpha):
 
@@ -261,53 +249,25 @@ class TSP:
 		key_max = max(costs_map.keys(), key=(lambda k: costs_map[k]))
 		key_min = min(costs_map.keys(), key=(lambda k: costs_map[k]))
 
-		min_cost = costs_map[key_min]
-		max_cost = costs_map[key_max]
+		min_cost = costs_map[key_min] # pior custo
+		max_cost = costs_map[key_max] # melhor custo
 
 		alpha_offset = min_cost + (alpha * (max_cost - min_cost))
-		
-		#print(" Candidates : ")
-		#print(costs_map)
 
-		RCL = [ mapa[k] for (k, v) in costs_map.items() if v >= alpha_offset ]
+		RCL = [ mapa[k] for (k, v) in costs_map.items() if v <= alpha_offset ]
 
-		costs = [ costs_map[_.id] for _ in RCL ]
-		
-		#print ("choosed")
-		#print (costs)
-		
 		return RCL
 
-	def _get_RCL3(self, current_el, mapa, M, alpha):
-
-		costs_map = { key: -self.distance_by_matrix(current_el, value, M) for (key, value) in mapa.items() }
-
-		key_max = max(costs_map.keys(), key=(lambda k: costs_map[k]))
-		key_min = min(costs_map.keys(), key=(lambda k: costs_map[k]))
-
-		min_cost = costs_map[key_min]
-		max_cost = costs_map[key_max]
-
-		alpha_offset = min_cost + (alpha * (max_cost - min_cost))
-		
-		#print(" Candidates : ")
-		#print(costs_map)
-
-		RCL = [ mapa[k] for (k, v) in costs_map.items() if v >= alpha_offset ]
-
-		costs = [ costs_map[_.id] for _ in RCL ]
-		
-		#print ("choosed")
-		#print (costs)
-		
-		return RCL
-
+	##
+	#
+	# Meta heuristica GRASP
+	# a - Utilizamos a heuristica do vizinho mais proximo para formar a RCL
+	# b - Escolhemos aleatoriamente um elemento da RCL para montar a solucao
+	# c - Aplicamos VND (2opt e 3opt) para achar minimos locais
+	# 
 	def GRASP_TSP(self, cities, M, alpha = 1.0):
 		
-		mapa = {}
-
-		for i in cities:
-			mapa[i.id] = i 
+		mapa = { i.id : i for i in cities }
 
 		solution = []
 		
@@ -325,11 +285,9 @@ class TSP:
 
 			current_el = solution[-1]
 
-			#print ("Percentage : " + str(percentage) + "%")
+			percentage += percentage_offset
 
-			#RCL = self._get_RCL(current_el, mapa, M, alpha)
-
-			RCL = self._get_RCL3(current_el, mapa, M, alpha)
+			RCL = self._get_RCL(current_el, mapa, M, alpha)
 
 			current_el = random.choice(RCL)
 
@@ -342,8 +300,6 @@ class TSP:
 			
 			VND_cost = self.get_cost(VND_solution, M)
 
-			percentage += percentage_offset
-
 			if VND_cost < cost:
 				solution = VND_solution
 				cost = VND_cost
@@ -351,61 +307,3 @@ class TSP:
 		solution.append(first_el)
 
 		return solution 
-
-
-
-
-"""
-	2opt fazer para todas as instancias e sempre pegar o melhor, 
-	quando nao melhorar, retornar o melhor resultado
-
-	VND : aplicar o 2opt ate o resultado final, depois aplicar o 3opt,
-			Se melhorar => voltar pro 2opt
-			se nao => retorna
-
-
-	VND : Ao conseguir resultado no 3opt volta pro 2opt
-
-	META = > implementar do zero
-
-"""
-"""
-while PROBLEMA NAO RESOLVIDO:
-
-	# Monta a lista de possiveis melhores candidatos com base no alpha
-	#
-	# Caso o alpha seja muito randomico, a lista de candidatos sera maior
-	# Caso o alpha seja 100% nao randomico a lista sera formada por 1 elemento
-	RCL = monta_lista_de_candidatos(ALPHA)
-
-	# Escolhe um candidado randomicamente
-	# OBS : caso o alpha seja 100% nao randomico, sempre escolhera o mais barato (guloso)
-	candidato_escolhido = RCL.get_randomico()
-
-	# Adiciona o candidato escolhido na solucao final
-	SOLUCAO_FINAL += candidato_escolhido
-
-	# Aplica movimentos de vizinhanca (2opt, 3opt)
-	# na solucao final
-	SOLUCAO_COM_VND = aplica_vnd(SOLUCAO_FINAL)
-
-	# se os movimentos melhoraram o custo => faz a solucao com VND ser a solucao final
-	if SOLUCAO_COM_VND.custo < SOLUCAO_FINAL.custo:
-		SOLUCAO_FINAL = SOLUCAO_COM_VND
-"""
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		
